@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="returnsApp">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penn State Returns</title>
+
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body ng-controller="ReturnsController">
+
+    <nav>
+        <h2>Nittany Lions Sports</h2>
+        <a href="index.html">Home</a>
+        <a href="signup.html">Register</a>
+        <a href="games.html">Item Manager</a>
+        <a href="cart.html">Shop</a>
+        <a href="finalization.html">Finalization</a>
+        <a href="shipping.html">Shipping</a>
+        <a href="billing.html">Billing</a>
+        <a href="returns.html">Returns</a>
+    </nav>
+
+    <div class="container mt-4">
+        <h1>Handle Returns</h1>
+        <p>Search for a product and submit your return details.</p>
+
+        <div class="row">
+            <div class="col-lg-7">
+                <label class="form-label">Search Product</label>
+                <input type="text" id="searchProduct" class="form-control" placeholder="Search by product name...">
+
+                <div class="mt-3">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Image</th>
+                                <th>Product</th>
+                                <th>Price</th>
+                                <th>Select</th>
+                            </tr>
+                        </thead>
+                        <tbody id="returnsTableBody">
+                            <tr ng-repeat="product in products">
+                                <td>
+                                    <img ng-src="{{ product.image }}" alt="{{ product.description }}" width="70">
+                                </td>
+                                <td>{{ product.description }}</td>
+                                <td>${{ product.price }}</td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-primary" ng-click="selectProduct(product)">
+                                        Select
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <form ng-submit="submitReturn()" novalidate>
+                    <label class="form-label mt-3">Selected Product *</label>
+                    <input type="text" class="form-control" ng-model="returnForm.productName" readonly>
+                    <div class="text-danger" ng-if="errors.productName">{{ errors.productName }}</div>
+
+                    <label class="form-label mt-3">Selected Product Price</label>
+                    <input type="text" class="form-control" ng-model="returnForm.price" readonly>
+
+                    <label class="form-label mt-3">Reason for Return *</label>
+                    <select class="form-select" ng-model="returnForm.reason">
+                        <option value="">Choose reason</option>
+                        <option value="Damaged">Damaged</option>
+                        <option value="Wrong Size">Wrong Size</option>
+                        <option value="Wrong Item">Wrong Item</option>
+                        <option value="No Longer Needed">No Longer Needed</option>
+                    </select>
+                    <div class="text-danger" ng-if="errors.reason">{{ errors.reason }}</div>
+
+                    <label class="form-label mt-3">Product Condition *</label>
+                    <select class="form-select" ng-model="returnForm.condition">
+                        <option value="">Choose condition</option>
+                        <option value="New">New</option>
+                        <option value="Opened">Opened</option>
+                        <option value="Used">Used</option>
+                        <option value="Damaged">Damaged</option>
+                    </select>
+                    <div class="text-danger" ng-if="errors.condition">{{ errors.condition }}</div>
+
+                    <label class="form-label mt-3">Additional Details</label>
+                    <textarea class="form-control" ng-model="returnForm.details" rows="4" placeholder="Explain the issue with the item"></textarea>
+
+                    <button type="submit" class="btn btn-primary mt-3">Submit Return</button>
+                    <button type="button" class="btn btn-secondary mt-3 ms-2" ng-click="resetReturn()">Reset</button>
+                </form>
+
+                <div class="alert alert-success mt-3" ng-if="successMessage">
+                    {{ successMessage }}
+                </div>
+
+                <div class="alert alert-info mt-3" ng-if="serverResponse">
+                    {{ serverResponse }}
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="summary-card" ng-if="returnForm.productName">
+                    <h4>Selected Return Item</h4>
+                    <img ng-src="{{ returnForm.image }}" alt="{{ returnForm.productName }}" width="120" class="mb-3">
+                    <p><strong>Product:</strong> {{ returnForm.productName }}</p>
+                    <p><strong>Price:</strong> ${{ returnForm.price }}</p>
+                </div>
+
+                <div class="summary-card mt-3">
+                    <h4>Return JSON</h4>
+                    <pre class="json-box">{{ returnJSON | json }}</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var returnsApp = angular.module("returnsApp", []);
+
+        returnsApp.controller("ReturnsController", function($scope) {
+            $scope.products = [];
+            $scope.errors = {};
+            $scope.successMessage = "";
+            $scope.serverResponse = "";
+            $scope.returnJSON = {};
+
+            $scope.returnForm = {
+                productName: "",
+                price: "",
+                image: "",
+                reason: "",
+                condition: "",
+                details: ""
+            };
+
+            $.getJSON("/api/products", function(data) {
+                $scope.products = data;
+                $scope.$apply();
+
+                $("#searchProduct").on("keyup", function() {
+                    var value = $(this).val().toLowerCase();
+                    $("#returnsTableBody tr").filter(function() {
+                        $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+                    });
+                });
+            }).fail(function() {
+                $scope.serverResponse = "Could not load product data.";
+                $scope.$apply();
+            });
+
+            $scope.selectProduct = function(product) {
+                $scope.returnForm.productName = product.description;
+                $scope.returnForm.price = product.price;
+                $scope.returnForm.image = product.image;
+            };
+
+            $scope.validateReturn = function() {
+                $scope.errors = {};
+
+                if (!$scope.returnForm.productName) {
+                    $scope.errors.productName = "Please select a product.";
+                }
+
+                if (!$scope.returnForm.reason) {
+                    $scope.errors.reason = "Please select a reason for return.";
+                }
+
+                if (!$scope.returnForm.condition) {
+                    $scope.errors.condition = "Please select the product condition.";
+                }
+
+                return Object.keys($scope.errors).length === 0;
+            };
+
+            $scope.submitReturn = async function() {
+                $scope.successMessage = "";
+                $scope.serverResponse = "";
+
+                if (!$scope.validateReturn()) {
+                    return;
+                }
+
+                $scope.returnJSON = {
+                    productName: $scope.returnForm.productName,
+                    price: $scope.returnForm.price,
+                    image: $scope.returnForm.image,
+                    reason: $scope.returnForm.reason,
+                    condition: $scope.returnForm.condition,
+                    details: $scope.returnForm.details
+                };
+
+                try {
+                    const response = await fetch("/returns", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify($scope.returnJSON)
+                    });
+
+                    const result = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(result.message || "There was an error sending the return request.");
+                    }
+
+                    $scope.successMessage = result.message;
+                    $scope.serverResponse = "";
+                    $scope.$apply();
+                } catch (error) {
+                    $scope.serverResponse = error.message || "There was an error sending the return request.";
+                    $scope.$apply();
+                }
+            };
+
+            $scope.resetReturn = function() {
+                $scope.returnForm = {
+                    productName: "",
+                    price: "",
+                    image: "",
+                    reason: "",
+                    condition: "",
+                    details: ""
+                };
+                $scope.errors = {};
+                $scope.successMessage = "";
+                $scope.serverResponse = "";
+                $scope.returnJSON = {};
+            };
+        });
+    </script>
+
+</body>
+</html>

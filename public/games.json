@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "sport": "Football",
+    "opponent": "Ohio State",
+    "date": "2026-09-05",
+    "time": "15:30",
+    "venue": "Beaver Stadium",
+    "tickets": "Available"
+  },
+  {
+    "id": 2,
+    "sport": "Basketball",
+    "opponent": "Michigan",
+    "date": "2026-09-12",
+    "time": "12:00",
+    "venue": "Bryce Jordan Center",
+    "tickets": "Available"
+  }
+]

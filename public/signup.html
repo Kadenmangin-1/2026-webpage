@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register - Nittany Lions</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+<nav>
+    <h2>Nittany Lions Sports</h2>
+    <a href="index.html">Home</a>
+    <a href="signup.html">Register</a>
+    <a href="games.html">Item Manager</a>
+    <a href="cart.html">Shop</a>
+    <a href="finalization.html">Finalization</a>
+    <a href="shipping.html">Shipping</a>
+    <a href="billing.html">Billing</a>
+    <a href="returns.html">Returns</a>
+</nav>
+
+<div class="container">
+
+    <h1>Member Registration</h1>
+
+    <form id="signupForm">
+        <input type="hidden" id="editIndex" value="-1">
+
+        <label>Full Name *</label>
+        <input type="text" id="fullName" class="form-control">
+
+        <label>Email *</label>
+        <input type="email" id="email" class="form-control">
+
+        <label>Phone (optional)</label>
+        <input type="text" id="phone" class="form-control">
+
+        <label>Age *</label>
+        <input type="number" id="age" class="form-control">
+
+        <label>Address *</label>
+        <input type="text" id="address" class="form-control">
+
+        <button type="submit" id="submitBtn" class="btn btn-primary mt-3">Sign Up</button>
+    </form>
+
+    <hr>
+
+    <h2>Registered Members (<span id="memberCount">0</span>)</h2>
+
+    <div id="emptyState">No members registered yet.</div>
+
+    <div id="membersTableWrapper">
+        <table class="table table-bordered mt-2">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Age</th>
+                    <th>Address</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="membersTableBody"></tbody>
+        </table>
+    </div>
+
+    <h3>JSON Data</h3>
+    <pre id="jsonOutput" class="json-box"></pre>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>

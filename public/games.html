@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Penn State Sports Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+
+<nav>
+    <a href="index.html">Home</a>
+    <a href="games.html">Manage Items</a>
+    <a href="cart.html">Shop</a>
+</nav>
+
+<div class="container">
+    <h2>Manage Penn State Products</h2>
+
+    <form id="gameForm">
+        <label for="sport">Product ID*</label>
+        <input type="number" id="sport" required>
+
+        <label for="opponent">Description*</label>
+        <input type="text" id="opponent" required>
+
+        <label for="date">Category*</label>
+        <input type="text" id="date" required>
+
+        <label for="time">Unit*</label>
+        <input type="text" id="time" required>
+
+        <label for="venue">Price*</label>
+        <input type="number" step="0.01" id="venue" required>
+
+        <label for="tickets">Color*</label>
+        <input type="text" id="tickets" required>
+
+        <label for="image">Image URL*</label>
+        <input type="text" id="image" required>
+
+        <input type="hidden" id="editId">
+
+        <button type="submit">Save Product</button>
+    </form>
+
+    <h3>Products List</h3>
+    <input type="text" id="searchGame" placeholder="Search products..." class="form-control mb-3">
+    <table class="table table-bordered">
+        <thead class="table-dark">
+            <tr>
+                <th>DB ID</th>
+                <th>Product ID</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Unit</th>
+                <th>Price</th>
+                <th>Color</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="gamesTableBody">
+        </tbody>
+    </table>
+</div>
+
+<script>
+let gamesData = [];
+
+async function loadGames() {
+    try {
+        const response = await fetch("/api/products");
+        gamesData = await response.json();
+        displayGames(gamesData);
+    } catch (error) {
+        console.log("Could not load products:", error);
+    }
+}
+
+function displayGames(dataToShow = gamesData) {
+    let tableBody = $('#gamesTableBody');
+    tableBody.empty();
+
+    dataToShow.forEach(game => {
+        tableBody.append(`
+            <tr>
+                <td>${game._id}</td>
+                <td>${game.productId}</td>
+                <td>${game.description}</td>
+                <td>${game.category}</td>
+                <td>${game.unit}</td>
+                <td>$${game.price}</td>
+                <td>${game.color}</td>
+                <td>
+                    <button class="btn btn-sm btn-primary" onclick="editGame('${game._id}')">Edit</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteGame('${game._id}')">Delete</button>
+                </td>
+            </tr>
+        `);
+    });
+}
+
+$('#gameForm').submit(async function(e) {
+    e.preventDefault();
+
+    let newGame = {
+        productId: Number($('#sport').val()),
+        description: $('#opponent').val(),
+        category: $('#date').val(),
+        unit: $('#time').val(),
+        price: Number($('#venue').val()),
+        color: $('#tickets').val(),
+        image: $('#image').val()
+    };
+
+    if (!newGame.productId || !newGame.description || !newGame.category || !newGame.unit || !newGame.price || !newGame.color || !newGame.image) {
+        alert("Please fill out all required fields.");
+        return;
+    }
+
+    const editId = $("#editId").val();
+
+    try {
+        let response;
+
+        if (editId) {
+            response = await fetch(`/api/products/${editId}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(newGame)
+            });
+        } else {
+            response = await fetch("/api/products", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(newGame)
+            });
+        }
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            alert(result.message || "Could not save product.");
+            return;
+        }
+
+        alert(result.message);
+        $('#gameForm')[0].reset();
+        $('#editId').val("");
+        loadGames();
+    } catch (error) {
+        console.log("Error saving product:", error);
+    }
+});
+
+function editGame(id) {
+    const game = gamesData.find(item => item._id === id);
+
+    if (!game) return;
+
+    $('#sport').val(game.productId);
+    $('#opponent').val(game.description);
+    $('#date').val(game.category);
+    $('#time').val(game.unit);
+    $('#venue').val(game.price);
+    $('#tickets').val(game.color);
+    $('#image').val(game.image);
+    $('#editId').val(game._id);
+}
+
+async function deleteGame(id) {
+    if (!confirm("Are you sure you want to delete this product?")) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/products/${id}`, {
+            method: "DELETE"
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            alert(result.message || "Could not delete product.");
+            return;
+        }
+
+        alert(result.message);
+        loadGames();
+    } catch (error) {
+        console.log("Error deleting product:", error);
+    }
+}
+
+$(document).ready(function() {
+    loadGames();
+});
+
+$("#searchGame").on("keyup", function () {
+    let value = $(this).val().toLowerCase();
+
+    let filtered = gamesData.filter(function (game) {
+        return (
+            String(game.description).toLowerCase().includes(value) ||
+            String(game.category).toLowerCase().includes(value) ||
+            String(game.color).toLowerCase().includes(value)
+        );
+    });
+
+    displayGames(filtered);
+});
+</script>
+
+</body>
+</html>

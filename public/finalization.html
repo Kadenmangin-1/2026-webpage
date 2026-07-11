@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penn State Merch Finalization</title>
+
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+
+    <nav>
+        <h2>Nittany Lions Sports</h2>
+        <a href="index.html">Home</a>
+        <a href="signup.html">Register</a>
+        <a href="games.html">Item Manager</a>
+        <a href="cart.html">Shop</a>
+        <a href="finalization.html">Finalization</a>
+        <a href="shipping.html">Shipping</a>
+        <a href="billing.html">Billing</a>
+        <a href="returns.html">Returns</a>
+    </nav>
+
+    <div class="container mt-4 mb-5">
+        <div id="root"></div>
+    </div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function FinalizationPage() {
+            const [products, setProducts] = useState([]);
+            const [searchTerm, setSearchTerm] = useState("");
+            const [filteredProducts, setFilteredProducts] = useState([]);
+
+            const [formData, setFormData] = useState({
+                fullName: "",
+                email: "",
+                itemId: "",
+                quantity: 1,
+                size: "",
+                deliveryMethod: "",
+                colorPreference: "",
+                notes: "",
+                agree: false
+            });
+
+            const [errors, setErrors] = useState({});
+            const [successMessage, setSuccessMessage] = useState("");
+            const [apiResponse, setApiResponse] = useState("");
+
+            useEffect(() => {
+                $.getJSON("/api/products", function(data) {
+                    setProducts(data);
+                    setFilteredProducts(data);
+                }).fail(function() {
+                    console.log("Could not load product data");
+                });
+            }, []);
+
+            useEffect(() => {
+                const filtered = products.filter(product =>
+                    product.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    product.category.toLowerCase().includes(searchTerm.toLowerCase())
+                );
+                setFilteredProducts(filtered);
+            }, [searchTerm, products]);
+
+            function handleChange(e) {
+                const { name, value, type, checked } = e.target;
+                setFormData({
+                    ...formData,
+                    [name]: type === "checkbox" ? checked : value
+                });
+            }
+
+            function validateForm() {
+                let newErrors = {};
+
+                if (formData.fullName.trim() === "") {
+                    newErrors.fullName = "Full name is required.";
+                }
+
+                if (formData.email.trim() === "") {
+                    newErrors.email = "Email is required.";
+                } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+                    newErrors.email = "Enter a valid email address.";
+                }
+
+                if (formData.itemId === "") {
+                    newErrors.itemId = "Please select an item.";
+                }
+
+                if (Number(formData.quantity) < 1) {
+                    newErrors.quantity = "Quantity must be at least 1.";
+                }
+
+                if (formData.size === "") {
+                    newErrors.size = "Please select a size.";
+                }
+
+                if (formData.deliveryMethod === "") {
+                    newErrors.deliveryMethod = "Please select a delivery method.";
+                }
+
+                if (!formData.agree) {
+                    newErrors.agree = "You must confirm the order.";
+                }
+
+                setErrors(newErrors);
+                return Object.keys(newErrors).length === 0;
+            }
+
+            const selectedProduct = products.find(
+                product => String(product.productId) === String(formData.itemId)
+            );
+
+            const orderJSON = {
+                customerName: formData.fullName,
+                email: formData.email,
+                itemId: formData.itemId,
+                itemDescription: selectedProduct ? selectedProduct.description : "",
+                category: selectedProduct ? selectedProduct.category : "",
+                unit: selectedProduct ? selectedProduct.unit : "",
+                price: selectedProduct ? selectedProduct.price : 0,
+                quantity: Number(formData.quantity),
+                size: formData.size,
+                deliveryMethod: formData.deliveryMethod,
+                colorPreference: formData.colorPreference,
+                notes: formData.notes,
+                totalPrice: selectedProduct
+                    ? (selectedProduct.price * Number(formData.quantity)).toFixed(2)
+                    : "0.00"
+            };
+
+            function handleSubmit(e) {
+                e.preventDefault();
+                setSuccessMessage("");
+                setApiResponse("");
+
+                if (!validateForm()) {
+                    return;
+                }
+
+                if (!selectedProduct) {
+                    setApiResponse("Please select a valid product.");
+                    return;
+                }
+
+                $.ajax({
+                    url: "/cart",
+                    method: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({
+                        productId: selectedProduct.productId,
+                        description: selectedProduct.description,
+                        price: selectedProduct.price,
+                        quantity: Number(formData.quantity),
+                        image: selectedProduct.image
+                    }),
+                    success: function(response) {
+                        setSuccessMessage("Order finalized successfully and added to cart!");
+                        setApiResponse(JSON.stringify(response, null, 2));
+                    },
+                    error: function(xhr) {
+                        const msg = xhr.responseJSON?.message || "Error sending order.";
+                        setApiResponse(msg);
+                    }
+                });
+            }
+
+            function resetForm() {
+                setFormData({
+                    fullName: "",
+                    email: "",
+                    itemId: "",
+                    quantity: 1,
+                    size: "",
+                    deliveryMethod: "",
+                    colorPreference: "",
+                    notes: "",
+                    agree: false
+                });
+                setErrors({});
+                setSuccessMessage("");
+                setApiResponse("");
+            }
+
+            return (
+                <div className="card shadow-lg border-0">
+                    <div className="card-body p-4">
+                        <h1 className="mb-3">Penn State Merchandise Finalization</h1>
+                        <p className="text-muted">
+                            Complete your merchandise order details below.
+                        </p>
+
+                        <div className="row g-4">
+                            <div className="col-lg-7">
+                                <form onSubmit={handleSubmit}>
+                                    <div className="mb-3">
+                                        <label className="form-label">Full Name *</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            name="fullName"
+                                            value={formData.fullName}
+                                            onChange={handleChange}
+                                        />
+                                        {errors.fullName && <div className="text-danger mt-1">{errors.fullName}</div>}
+                                    </div>
+
+                                    <div className="mb-3">
+                                        <label className="form-label">Email *</label>
+                                        <input
+                                            type="email"
+                                            className="form-control"
+                                            name="email"
+                                            value={formData.email}
+                                            onChange={handleChange}
+                                        />
+                                        {errors.email && <div className="text-danger mt-1">{errors.email}</div>}
+                                    </div>
+
+                                    <div className="mb-3">
+                                        <label className="form-label">Search Product</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            placeholder="Search by name or category"
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                        />
+                                    </div>
+
+                                    <div className="mb-3">
+                                        <label className="form-label">Select Product *</label>
+                                        <select
+                                            className="form-select"
+                                            name="itemId"
+                                            value={formData.itemId}
+                                            onChange={handleChange}
+                                        >
+                                            <option value="">Choose a product</option>
+                                            {filteredProducts.map(product => (
+                                                <option key={product._id} value={product.productId}>
+                                                    {product.description} - ${product.price}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        {errors.itemId && <div className="text-danger mt-1">{errors.itemId}</div>}
+                                    </div>
+
+                                    <div className="row">
+                                        <div className="col-md-6 mb-3">
+                                            <label className="form-label">Quantity *</label>
+                                            <input
+                                                type="number"
+                                                className="form-control"
+                                                name="quantity"
+                                                min="1"
+                                                value={formData.quantity}
+                                                onChange={handleChange}
+                                            />
+                                            {errors.quantity && <div className="text-danger mt-1">{errors.quantity}</div>}
+                                        </div>
+
+                                        <div className="col-md-6 mb-3">
+                                            <label className="form-label">Size *</label>
+                                            <select
+                                                className="form-select"
+                                                name="size"
+                                                value={formData.size}
+                                                onChange={handleChange}
+                                            >
+                                                <option value="">Choose size</option>
+                                                <option value="Small">Small</option>
+                                                <option value="Medium">Medium</option>
+                                                <option value="Large">Large</option>
+                                                <option value="XL">XL</option>
+                                            </select>
+                                            {errors.size && <div className="text-danger mt-1">{errors.size}</div>}
+                                        </div>
+                                    </div>
+
+                                    <div className="mb-3">
+                                        <label className="form-label">Delivery Method *</label>
+                                        <select
+                                            className="form-select"
+                                            name="deliveryMethod"
+                                            value={formData.deliveryMethod}
+                                            onChange={handleChange}
+                                        >
+                                            <option value="">Choose delivery method</option>
+                                            <option value="Standard Shipping">Standard Shipping</option>
+                                            <option value="Express Shipping">Express Shipping</option>
+                                            <option value="Campus Pickup">Campus Pickup</option>
+                                        </select>
+                                        {errors.deliveryMethod && <div className="text-danger mt-1">{errors.deliveryMethod}</div>}
+                                    </div>
+
+                                    <div className="mb-3">
+                                        <label className="form-label">Color Preference</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            name="colorPreference"
+                                            value={formData.colorPreference}
+                                            onChange={handleChange}
+                                        />
+                                    </div>
+
+                                    <div className="mb-3">
+                                        <label className="form-label">Additional Notes</label>
+                                        <textarea
+                                            className="form-control"
+                                            rows="3"
+                                            name="notes"
+                                            value={formData.notes}
+                                            onChange={handleChange}
+                                        ></textarea>
+                                    </div>
+
+                                    <div className="form-check mb-3">
+                                        <input
+                                            className="form-check-input"
+                                            type="checkbox"
+                                            name="agree"
+                                            checked={formData.agree}
+                                            onChange={handleChange}
+                                            id="agree"
+                                        />
+                                        <label className="form-check-label" htmlFor="agree">
+                                            I confirm my order details.
+                                        </label>
+                                        {errors.agree && <div className="text-danger mt-1">{errors.agree}</div>}
+                                    </div>
+
+                                    <button type="submit" className="btn btn-primary me-2">Finalize Order</button>
+                                    <button type="button" className="btn btn-secondary" onClick={resetForm}>Reset</button>
+                                </form>
+
+                                {successMessage && (
+                                    <div className="alert alert-success mt-3">{successMessage}</div>
+                                )}
+                            </div>
+
+                            <div className="col-lg-5">
+                                <div className="summary-card">
+                                    <h4>Order Summary</h4>
+                                    <p><strong>Customer:</strong> {formData.fullName || "Not entered"}</p>
+                                    <p><strong>Email:</strong> {formData.email || "Not entered"}</p>
+                                    <p><strong>Selected Item:</strong> {selectedProduct ? selectedProduct.description : "None selected"}</p>
+                                    <p><strong>Quantity:</strong> {formData.quantity}</p>
+                                    <p><strong>Total Price:</strong> ${orderJSON.totalPrice}</p>
+                                </div>
+
+                                <div className="summary-card mt-3">
+                                    <h4>Finalization JSON</h4>
+                                    <pre className="json-box">{JSON.stringify(orderJSON, null, 2)}</pre>
+                                </div>
+
+                                <div className="summary-card mt-3">
+                                    <h4>Server Response</h4>
+                                    <pre className="json-box">{apiResponse}</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById("root")).render(<FinalizationPage />);
+    </script>
+
+</body>
+</html>

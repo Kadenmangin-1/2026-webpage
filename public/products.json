@@ -1,0 +1,38 @@
+[
+  {
+    "id": 1,
+    "description": "Penn State Football Jersey",
+    "category": "Clothing",
+    "unit": "Each",
+    "price": 89.99,
+    "color": "Blue",
+    "image": "https://dks.scene7.com/is/image/GolfGalaxy/24NIKMNCPSNVYNKRPPEN?wid=2000&hei=2000&fmt=pjpeg"
+  },
+  {
+    "id": 2,
+    "description": "PSU Baseball Cap",
+    "category": "Accessories",
+    "unit": "Each",
+    "price": 24.99,
+    "color": "White",
+    "image": "https://dks.scene7.com/is/image/GolfGalaxy/2147BMNCPSNVYCLNPPEN?wid=2000&hei=2000&fmt=pjpeg"
+  },
+  {
+    "id": 3,
+    "description": "Nittany Lions Hoodie",
+    "category": "Clothing",
+    "unit": "Each",
+    "price": 59.99,
+    "color": "Gray",
+    "image": "https://dks.scene7.com/is/image/GolfGalaxy/24CLMMNCPSNVYPRM2PENB?wid=2000&hei=2000&fmt=pjpeg"
+  },
+  {
+    "id": 4,
+    "description": "Penn State Mug",
+    "category": "Home",
+    "unit": "Each",
+    "price": 14.99,
+    "color": "Blue",
+    "image": "https://dks.scene7.com/is/image/GolfGalaxy/24TMEUNCPS15ZSCLPPEN?wid=2000&hei=2000&fmt=pjpeg"
+  }
+]

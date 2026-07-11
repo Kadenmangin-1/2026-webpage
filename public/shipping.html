@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="shippingApp">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penn State Shipping</title>
+
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+</head>
+<body ng-controller="ShippingController">
+
+<nav>
+    <h2>Nittany Lions Sports</h2>
+    <a href="index.html">Home</a>
+    <a href="signup.html">Register</a>
+    <a href="games.html">Item Manager</a>
+    <a href="cart.html">Shop</a>
+    <a href="finalization.html">Finalization</a>
+    <a href="shipping.html">Shipping</a>
+    <a href="billing.html">Billing</a>
+    <a href="returns.html">Returns</a>
+</nav>
+
+<div class="container mt-4">
+    <h1>Shipping Details</h1>
+    <p>Enter your shipping information before completing billing.</p>
+
+    <div class="row">
+        <div class="col-lg-7">
+            <form ng-submit="submitShipping()" novalidate>
+                <label class="form-label">Full Name *</label>
+                <input type="text" class="form-control" ng-model="shipping.fullName">
+                <div class="text-danger" ng-if="errors.fullName">{{ errors.fullName }}</div>
+
+                <label class="form-label mt-3">Address *</label>
+                <input type="text" class="form-control" ng-model="shipping.address">
+                <div class="text-danger" ng-if="errors.address">{{ errors.address }}</div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label mt-3">City *</label>
+                        <input type="text" class="form-control" ng-model="shipping.city">
+                        <div class="text-danger" ng-if="errors.city">{{ errors.city }}</div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label mt-3">State *</label>
+                        <input type="text" class="form-control" ng-model="shipping.state" maxlength="2">
+                        <div class="text-danger" ng-if="errors.state">{{ errors.state }}</div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label mt-3">ZIP Code *</label>
+                        <input type="text" class="form-control" ng-model="shipping.zipCode" maxlength="5">
+                        <div class="text-danger" ng-if="errors.zipCode">{{ errors.zipCode }}</div>
+                    </div>
+                </div>
+
+                <label class="form-label mt-3">Delivery Method *</label>
+                <select class="form-select" ng-model="shipping.deliveryMethod">
+                    <option value="">Choose delivery method</option>
+                    <option value="Standard Shipping">Standard Shipping</option>
+                    <option value="Express Shipping">Express Shipping</option>
+                    <option value="Campus Pickup">Campus Pickup</option>
+                </select>
+                <div class="text-danger" ng-if="errors.deliveryMethod">{{ errors.deliveryMethod }}</div>
+
+                <button type="submit" class="btn btn-primary mt-3">Save Shipping</button>
+                <a href="billing.html" class="btn btn-secondary mt-3 ms-2">Go to Billing</a>
+            </form>
+
+            <div class="alert alert-success mt-3" ng-if="successMessage">
+                {{ successMessage }}
+            </div>
+
+            <div class="alert alert-danger mt-3" ng-if="serverError">
+                {{ serverError }}
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="summary-card">
+                <h4>Shipping JSON</h4>
+                <pre class="json-box">{{ shippingJSON | json }}</pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const app = angular.module("shippingApp", []);
+
+app.controller("ShippingController", function($scope) {
+    $scope.shipping = {
+        fullName: "",
+        address: "",
+        city: "",
+        state: "",
+        zipCode: "",
+        deliveryMethod: ""
+    };
+
+    $scope.shippingJSON = {};
+    $scope.errors = {};
+    $scope.successMessage = "";
+    $scope.serverError = "";
+
+    $scope.validateShipping = function() {
+        $scope.errors = {};
+
+        if (!$scope.shipping.fullName || !$scope.shipping.fullName.trim()) {
+            $scope.errors.fullName = "Full name is required.";
+        }
+
+        if (!$scope.shipping.address || !$scope.shipping.address.trim()) {
+            $scope.errors.address = "Address is required.";
+        }
+
+        if (!$scope.shipping.city || !$scope.shipping.city.trim()) {
+            $scope.errors.city = "City is required.";
+        }
+
+        if (!$scope.shipping.state || !$scope.shipping.state.trim()) {
+            $scope.errors.state = "State is required.";
+        } else if (!/^[A-Za-z]{2}$/.test($scope.shipping.state.trim())) {
+            $scope.errors.state = "State must be 2 letters.";
+        }
+
+        if (!$scope.shipping.zipCode) {
+            $scope.errors.zipCode = "ZIP code is required.";
+        } else if (!/^\d{5}$/.test($scope.shipping.zipCode)) {
+            $scope.errors.zipCode = "ZIP code must be 5 digits.";
+        }
+
+        if (!$scope.shipping.deliveryMethod) {
+            $scope.errors.deliveryMethod = "Please choose a delivery method.";
+        }
+
+        return Object.keys($scope.errors).length === 0;
+    };
+
+    $scope.submitShipping = async function() {
+        $scope.successMessage = "";
+        $scope.serverError = "";
+
+        if (!$scope.validateShipping()) {
+            return;
+        }
+
+        $scope.shippingJSON = {
+            fullName: $scope.shipping.fullName,
+            address: $scope.shipping.address,
+            city: $scope.shipping.city,
+            state: $scope.shipping.state.toUpperCase(),
+            zipCode: $scope.shipping.zipCode,
+            deliveryMethod: $scope.shipping.deliveryMethod
+        };
+
+        try {
+            const response = await fetch("/shipping", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify($scope.shippingJSON)
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.message || "Shipping request failed.");
+            }
+
+            $scope.successMessage = result.message;
+            $scope.serverError = "";
+            $scope.$apply();
+        } catch (error) {
+            $scope.serverError = error.message || "Could not submit shipping details.";
+            $scope.successMessage = "";
+            $scope.$apply();
+        }
+    };
+});
+</script>
+
+</body>
+</html>
